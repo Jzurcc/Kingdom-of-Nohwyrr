@@ -1,0 +1,5 @@
+D:\Downloads\CC3\Kingdom of Nohwyrr\bin\Release\net8.0\publish\Kingdom of Nohwyrr.exe
+D:\Downloads\CC3\Kingdom of Nohwyrr\bin\Release\net8.0\publish\Kingdom of Nohwyrr.dll
+D:\Downloads\CC3\Kingdom of Nohwyrr\bin\Release\net8.0\publish\Kingdom of Nohwyrr.deps.json
+D:\Downloads\CC3\Kingdom of Nohwyrr\bin\Release\net8.0\publish\Kingdom of Nohwyrr.runtimeconfig.json
+D:\Downloads\CC3\Kingdom of Nohwyrr\bin\Release\net8.0\publish\Kingdom of Nohwyrr.pdb
