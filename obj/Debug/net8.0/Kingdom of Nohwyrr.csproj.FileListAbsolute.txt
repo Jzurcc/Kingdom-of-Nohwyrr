@@ -12,3 +12,4 @@ D:\Downloads\CC3\Kingdom of Nohwyrr\obj\Debug\net8.0\refint\Kingdom of Nohwyrr.d
 D:\Downloads\CC3\Kingdom of Nohwyrr\obj\Debug\net8.0\Kingdom of Nohwyrr.pdb
 D:\Downloads\CC3\Kingdom of Nohwyrr\obj\Debug\net8.0\Kingdom of Nohwyrr.genruntimeconfig.cache
 D:\Downloads\CC3\Kingdom of Nohwyrr\obj\Debug\net8.0\ref\Kingdom of Nohwyrr.dll
+D:\Downloads\CC3\Kingdom of Nohwyrr\obj\Debug\net8.0\Kingdom of Nohwyrr.sourcelink.json

@@ -17,8 +17,13 @@ public class Archer(int tspeed = 35, int tduration = 450, ConsoleColor color = C
         public string weapon_type = "Staff";
         public double mana = mana;
     }
-public class Weapon(string name = "???", string description = "???", double DMGMultiplier = 1) {
-    public string name = name, description = description;
+
+public class Item(string name = "???", string description = "???", int x = 0, int y= 0) {
+        public string name = name, description = description;        
+        public int x = x, y = y;
+    }
+
+public class Weapon(string name = "???", string description = "???", int x = 0, int y = 0, double DMGMultiplier = 1) : Item(name, description, x, y) {
     public double DMGMultiplier = DMGMultiplier;
 }
 
@@ -29,7 +34,17 @@ static void Start() {
     int choice = GetChoice(0, 0, "Start Game", "Exit");
     if (choice == 2)
         Environment.Exit(0);
-    
+    player = new Character();
+    RoomGen = new(7, 30, ConsoleColor.DarkGray, 0, 25, 2, 2, 0.6);
+    RoomGen.SetExits(0, 0, 1, 0);
+    RoomGen.InitializeRoom();
+    RoomGen.AddItemTile(new Dictionary<Item, int>{
+        {new Item("Wooden Bow", "A wooden bow and a quiver of arrows."), 1},
+        {new Item("Wooden Blade", "Durable, but it gets the job done."), 1},
+        {new Item("Wooden Staff", "It lacks beauty, but it's usable."), 1}});
+    RoomGen.SetSpawnPoint(3, 1);
+    RoomGen.DisplayRoom();
+
     player = new Character(35, 450, ConsoleColor.White, "Player");
     player.Narrate("You jolted awake.");
     player.Talk("Where am I...?");
@@ -43,12 +58,12 @@ static void Start() {
         player.Think("Which should I pick?");
         GetChoice(0, 0, "Blade", "Bow", "Staff");
         if (choice == 1) {
-            player.Narrate("A wooden blade. Durable, but it gets the job done.");
+            player.Narrate("A wooden blade. ");
             choice = GetChoice(5, 100, "Pick up.", "Choose another weapon.");
             if (choice == 1) {
                 flag = false;
                 player = new Warrior(15, 550, ConsoleColor.White, "Player");
-                player.AcquireWeapon(new Weapon("Wooden Blade", "Durable, but it gets the job done.", 1));
+                player.Acquire(new Weapon("Wooden Blade", "Durable, but it gets the job done.", 1));
             }
         } else if (choice == 2) {
             player.Narrate("A wooden bow and a quiver of arrows.");
@@ -56,7 +71,7 @@ static void Start() {
             if (choice == 1) {
                 flag = false;
                 player = new Archer(15, 550, ConsoleColor.White, "Player");
-                player.AcquireWeapon(new Weapon("Wooden Bow", "Could use some fixing, but it works.", 1));
+                player.Acquire(new Weapon("Wooden Bow", "Could use some fixing, but it works.", 1));
             }
         } else {
             player.Narrate("A wooden staff.");
@@ -64,7 +79,7 @@ static void Start() {
             if (choice == 1) {
                 flag = false;
                 player = new Mage(15, 550, ConsoleColor.White, "Player");
-                player.AcquireWeapon(new Weapon("Wooden Staff", "It lacks beauty, but usable.", 1));
+                player.Acquire(new Weapon("Wooden Staff", "It lacks beauty, but usable.", 1));
             }
             
         }
@@ -80,7 +95,6 @@ static void Start() {
 
 public class Character {
     public DeityEnum Deity;
-    public List<dynamic> inventory;
     // Dialogue variables
     public int tspeed, tduration;
     public ConsoleColor color;
@@ -93,9 +107,9 @@ public class Character {
     // Room variables
     public int X, Y, Stage;
     public int TotalKills, SacrificeKills, EnigmaKills, HarvestKills, EndKills, RoomKills;
-    public int spawnX = NextInt(1, 20), spawnY = NextInt(1, 26);
+    public int spawnX = NextInt(1, 5), spawnY = NextInt(1, 5);
     public Weapon weapon;
-    public Dictionary<int, string> inventoryDict;
+    public List<Item> inventory = [];
     public Character(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "???", int HP = 10, double DMGMultiplier = 1) {
         // Dialogue variables
         this.X = spawnX;
@@ -139,15 +153,9 @@ public class Character {
         this.Skill3Timer = 0;
         this.Skill4Timer = 0;
         this.Skill5Timer = 0;
-        this.inventoryDict = [];
     }
 
     // Methods
-    public void AcquireWeapon(Weapon weapon) {
-        this.weapon = weapon;
-        Narrate($"Acquired 1x {this.weapon.name}");
-        Narrate($"Description: {this.weapon.description}");
-    }
     public void EvaluateEXP() {
         while (EXP >= MaxEXP) {
             PTS += 2;
@@ -155,6 +163,29 @@ public class Character {
             LVL++;
             UpdateStats();
         }
+    }
+    public bool Acquire(dynamic item) {
+        Narrate($"Name: {item.name}");
+        Narrate($"Description: {item.description}");
+        if (item.GetType() == typeof(Weapon))
+            Narrate("Warning: Acquiring this will determine your permanent class.");
+        if (GetChoice(0, 0, "Acquire", "Ignore") == 1) {
+            inventory.Add(item);
+            this.weapon = item;
+            return true;
+        }
+
+        return false;
+    }
+
+    public void ShowInventory() {
+        Console.WriteLine("Inventory");
+        for (int i = 0; i < inventory.Count; i++)
+        {
+            Console.WriteLine($"[{i+1}] {inventory[i].name}");
+        }
+        Console.Write("\n> ");
+        Console.ReadKey();
     }
     public void Talk(string str, int tspeed = 15, int tduration = 250, ConsoleColor color = ConsoleColor.White, string name = "Player") {
         Program.Print(str, tspeed, tduration, color, name);
@@ -176,19 +207,6 @@ public class Character {
             X = newX;
             Y = newY;
         }
-    }
-
-    public Dictionary<int, string> GetInventory() {
-        inventoryDict.Clear();
-        
-        inventoryDict.Add(10, "   --------------------------------------------");
-        for (var i = 0; i < 9; i++)
-            if (i < inventory.Count)
-                inventoryDict.Add(11+i, string.Format("   {0}. {1}", i+1, inventory[i]));    
-            else
-                inventoryDict.Add(11+i, $"   {1+i}. Empty");
-        inventoryDict.Add(20, "   --------------------------------------------");
-        return inventoryDict;
     }
 
     public Dictionary<int, string> GetStats() {
@@ -727,8 +745,8 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
 
     // Method to randomly move the enemy
     public void Move() {
-        int[] dx = { -1, 0, 0, 1 };
-        int[] dy = { -1, 0, 0, 1 };
+        int[] dx = [-1, 0, 0, 1];
+        int[] dy = [-1, 0, 0, 1];
 
         // Attempt to move in a random direction
         for (int attempts = 0; attempts < 4; attempts++) {
@@ -751,11 +769,25 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
 }
 
 public class RoomGenerator {
-    public int xSize, ySize;
-    public RoomGenerator() {
-        // this.xSize = NextInt(25, 33);
-        // this.ySize = NextInt(33, 55);
-        this.xSize = this.ySize = NextInt(10, 15);
+    public int xSize, ySize, walls, enemyCount, minWallLength, maxWallLength;
+    public double horizontalPercentage;
+    public ConsoleColor room_color;
+    public int[] exits = [0, 0, 0, 0];
+    public List<Item> itemsOnGround = [];
+    public RoomGenerator(int x = 0, int y = 0, ConsoleColor room_color = ConsoleColor.DarkGray, int enemyCount = -1, int walls = -1, int minWallLength = 1, int maxWallLength = 4, double horizontalPercentage = 0.5) {
+        this.room_color = room_color;
+        this.walls = walls;
+        this.enemyCount = enemyCount;
+        this.minWallLength = minWallLength;
+        this.maxWallLength = maxWallLength;
+        this.horizontalPercentage = horizontalPercentage;
+
+        if (x == 0 && y == 0)
+            xSize = ySize = NextInt(10, 15);
+        else {
+            xSize = x;
+            ySize = y;
+        }
     }
         public void InitializeRoom() {
             RoomClear = false;
@@ -777,35 +809,84 @@ public class RoomGenerator {
                 Room[0, y] = new Tile(TileType.Wall);
                 Room[xSize - 1, y] = new Tile(TileType.Wall);
             }
+
+            if (walls == -1)
+                InitializeWalls(xSize*ySize/2);
+            else
+                InitializeWalls(walls);
             
-            // Initializes enemies and walls that scale with inner room area
-            InitializeWalls(xSize);
-            InitializeEnemies(3+xSize/2); 
+            if (enemyCount == -1)
+                InitializeEnemies(3+xSize*ySize/2/2); 
+            else
+                InitializeEnemies(enemyCount); 
+
             // InitializeItems(NextInt(6+player.Stage, 15+player.Stage), NextInt(5+player.Stage, 10+player.Stage));
+            
             // Randomizes and teleports player to random spawnpoint.
-            player.spawnX = player.spawnY = NextInt(1, 9);
-            player.X = player.spawnX;
-            player.Y = player.spawnY;
+            SetSpawnPoint(NextInt(1, xSize-2), NextInt(1, ySize-2));
+    }
+    public void SetSpawnPoint(int x, int y) {
+        player.X = player.spawnX = x;
+        player.Y = player.spawnY = y;
     }
 
+    public void SetExits(params int[] exits) {
+        if (exits.Length == 4)
+            this.exits = exits;
+        else if (exits.Length < 4) {
+            List<int> exitList = [.. exits];
+            for (int i = 0; i < 4 - exits.Length; i++)
+                exitList.Add(0);
+            this.exits = [.. exitList];
+        } else if (exits.Length == 0 || exits.Length > 4)
+            this.exits = [NextInt(1), NextInt(1), NextInt(1), NextInt(1), NextInt(1)];
+    }
     public void InitializeEnemies(int maxEnemies) {
         enemies.Clear();
         while (enemies.Count < maxEnemies) {
-            int x = NextInt(1, xSize-1);
-            int y = NextInt(1, ySize-1);
+            int x = NextInt(1, xSize-2);
+            int y = NextInt(1, ySize-2);
             if (Room[x, y].Type != TileType.Wall) {
                 enemies.Add(new Enemy(x, y));
                 enemies[^1].Initialize();
             }
         }
     }
+    public void AddItemTile(Dictionary<Item, int> items) {
+        foreach (KeyValuePair<Item, int> KP in items) {
+            Item item = KP.Key;
+            int current_amount = 0;
+            int max_amount = KP.Value;
+            int nx, ny;
+            while (current_amount < max_amount) {
+                if (item.x == 0 && item.y == 0) {
+                    nx = NextInt(1, xSize - 2);
+                    ny = NextInt(1, ySize - 2);
+                } else {
+                    nx = item.x;
+                    ny = item.y;
+                }
+
+                if (Room[nx, ny].Type == TileType.Empty) {
+                    item.x = nx;
+                    item.y = ny;
+                    Room[item.x, item.y] = new Tile(TileType.Item);
+                    current_amount++;
+                    itemsOnGround.Add(item);
+                }
+            }
+        }
+    }
+    
+
+
     public void InitializeItems(int HealingPotions = 0, int Golds = 0) {
         int CurrentHealingPotions = 0;
         int CurrentGolds = 0;
 
-        while (CurrentHealingPotions != HealingPotions || CurrentGolds != Golds) {
-            int x = NextInt(1, xSize - 1);
-            int y = NextInt(1, ySize - 1);
+        while (CurrentHealingPotions < HealingPotions || CurrentGolds < Golds) {
+            int x = NextInt(1, xSize - 2);
+            int y = NextInt(1, ySize - 2);
             
             if (Room[x, y].Type == TileType.Empty && CurrentHealingPotions != HealingPotions) {
                 Room[x, y] = new Tile(TileType.HealingPotion);
@@ -816,13 +897,12 @@ public class RoomGenerator {
                 CurrentGolds++;
             }
         }
-
     }
 
     private void InitializeWalls(int numOfWalls) {
         for (int i = 0; i < numOfWalls; i++) {
-            int x = NextInt(1, xSize - 1);
-            int y = NextInt(1, ySize - 1);
+            int x = NextInt(1, xSize - 2);
+            int y = NextInt(1, ySize - 2);
 
             // if ((x == xSize / 2 && y >= ySize / 2 - 1 && y <= ySize / 2 + 1) || (y == ySize / 2 && x >= xSize / 2 - 1 && x <= xSize / 2 + 1)) {
             //     continue; 
@@ -830,27 +910,48 @@ public class RoomGenerator {
 
             Room[x, y] = new Tile(TileType.Wall);
 
-            if (RNG.NextDouble() >= 0.5) {
-                int length = NextInt(1, 4);
+            if (RNG.NextDouble() >= horizontalPercentage) {
+                int length = NextInt(minWallLength, maxWallLength);
                 for (int j = 0; j < length; j++) {
                     int nx = x + j < xSize ? x + j : x; // Ensure within bounds 
                     Room[nx, y] = new Tile(TileType.Wall);
                 }
             }
             else {
-                int length = NextInt(1, 4); 
+                int length = NextInt(minWallLength, maxWallLength); 
                 for (int l = 0; l < length; l++) {
                     int ny = y + l < ySize ? y + l : y; // Ensure within bounds
                     Room[x, ny] = new Tile(TileType.Wall);
                 }
             }
         }
+        // Set the the outermost tiles beside the border as empty
+        double border_chance = 0.1;
+        for (int x = 1; x < xSize-1; x++) {
+            if (RNG.NextDouble() >= border_chance)
+                Room[x, 1] = new Tile(TileType.Empty);
+            if (RNG.NextDouble() >= border_chance)
+            Room[x, ySize - 2] = new Tile(TileType.Empty);
+        }
+
+        for (int y = 1; y < ySize-1; y++) {
+            if (RNG.NextDouble() >= border_chance)
+                Room[1, y] = new Tile(TileType.Empty);
+            if (RNG.NextDouble() >= border_chance)
+                Room[xSize - 2, y] = new Tile(TileType.Empty);
+        }
+        
         for (int i = 0; i < 4; i++) {
-            int[][] tiles = [[1, ySize/2], [xSize - 1, ySize / 2], [xSize/2, 1], [xSize/2, ySize - 1]];
-            int x = tiles[i][0];
-            int y = tiles[i][1];
-            if (Room[x, y].Type == TileType.Wall)
-                Room[x, y] = new Tile(TileType.Empty);
+            int[][] outer_tiles = [[xSize/2, 0], [0, ySize/2], [xSize/2, ySize - 1], [xSize - 1, ySize / 2]];
+            int ox = outer_tiles[i][0];
+            int oy = outer_tiles[i][1];
+            if (exits[i] == 1)
+                Room[ox, oy] = new Tile(TileType.Empty);
+
+            int[][] inner_tiles = [[xSize/2, 1], [1, ySize/2], [xSize/2, ySize - 2], [xSize - 2, ySize / 2]];
+            int ix = inner_tiles[i][0];
+            int iy = inner_tiles[i][1];
+            Room[ix, iy] = new Tile(TileType.Empty);
         }
     }
 
@@ -875,7 +976,18 @@ public class RoomGenerator {
                         enemy.Move();
             }
             
-            // Checks if player's tile is a portal
+            // Checks if player encounters enemy
+            foreach (Enemy enemy in enemies)
+                if (player.X == enemy.X && player.Y == enemy.Y) 
+                    if (player.RoomKills == 4) {
+                        enemy.UpdateAsBoss();
+                        Console.Clear();
+                        player.Narrate("Boss encountered!", 25, 1400, ConsoleColor.Red);
+                        Encounter(player, enemy);
+                    } else
+                        Encounter(player, enemy);
+                        
+            // player tile interaction
             switch (Room[player.X, player.Y].Type) {
             case TileType.Portal:
                 UsePortal();
@@ -897,18 +1009,17 @@ public class RoomGenerator {
                 player.Narrate($"Gained {GoldAmount} gold.", 5, 50);
                 Room[player.X, player.Y] = new Tile(TileType.Empty);
                 break;
+            case TileType.Item:
+                foreach (Item item in itemsOnGround)
+                {
+                    if (item.x == player.X && item.y == player.Y) {
+                        bool is_acquired = player.Acquire(item);
+                        if (is_acquired)
+                            Room[player.X, player.Y] = new Tile(TileType.Empty);
+                    }
+                }
+                break;
             }
-
-            // Checks if player encounters enemy
-            foreach (Enemy enemy in enemies)
-                if (player.X == enemy.X && player.Y == enemy.Y) 
-                    if (player.RoomKills == 4) {
-                        enemy.UpdateAsBoss();
-                        Console.Clear();
-                        player.Narrate("Boss encountered!", 25, 1400, ConsoleColor.Red);
-                        Encounter(player, enemy);
-                    } else
-                        Encounter(player, enemy);
         }
     }
 
@@ -2568,7 +2679,9 @@ public class RoomGenerator {
     }
 
     public void PrintRoom() {
+        Console.WriteLine($"player: ({player.X}, {player.Y})");
         Console.WriteLine("\n\n");
+        
         for (int i = 0; i < xSize; i++) {
             for (int j = 0; j < ySize; j++) {
                 // Writes the player and each of the enemies
@@ -2582,10 +2695,10 @@ public class RoomGenerator {
                     // Writes the tiles according to type.
                     switch (Room[i, j].Type) {
                     case TileType.Empty:
-                        WriteTile(". ", ConsoleColor.DarkGray);
+                        WriteTile(". ", room_color);
                         break;
                     case TileType.Wall:
-                        WriteTile("# ", ConsoleColor.DarkGray);
+                        WriteTile("# ", room_color);
                         break;
                     case TileType.Portal:
                         WriteTile("O ", ConsoleColor.Blue);
@@ -2596,19 +2709,22 @@ public class RoomGenerator {
                     case TileType.Gold:
                         WriteTile("o ", ConsoleColor.Yellow);
                         break;
+                    case TileType.Item:
+                        WriteTile("? ", ConsoleColor.Yellow);
+                        break;
                     }
                 }
 
                 // Updates interface
                 Interface.Clear();
                 player.UpdateStats();
-                UpdateInterface(new(){{0, $"   Controls: Movement (WASD), Inventory (1-9), Quit (Q), Spend Points (P)"}, {21, Menu}});
-                UpdateInterface(player.GetInventory());
-                UpdateInterface(player.GetStats());
+                // UpdateInterface(new(){{0, $"   Controls: Movement (WASD), Inventory (1-9), Quit (Q), Spend Points (P)"}, {21, Menu}});
+                // UpdateInterface(player.GetInventory());
+                // UpdateInterface(player.GetStats());
                 
-                // Prints interface
-                foreach (KeyValuePair<int, string> kvp in Interface)
-                    if (i == kvp.Key && j == ySize-1) Console.Write(kvp.Value);
+                // // Prints interface
+                // foreach (KeyValuePair<int, string> kvp in Interface)
+                //     if (i == kvp.Key && j == ySize-1) Console.Write(kvp.Value);
 
                 bool flag = true;
                 while (Menu != "" && flag && player.PTS != 0) {
@@ -2720,6 +2836,9 @@ public class RoomGenerator {
             break;
         case 'p':
             Menu = $"   Select the Stat you want to level up: [1] HP, [2] DEF, [3] ATK, [4] INT, [5] SPD, [6] LCK";
+            break;
+        case 'e':
+            player.ShowInventory();
             break;
         default:
             Menu = "";
@@ -2864,7 +2983,7 @@ public static void Print(string str, int speed = 1, int duration = 5, ConsoleCol
 
 
 
-public enum TileType { Empty, Wall, Portal, HealingPotion, ManaPotion, Gold }
+public enum TileType { Empty, Wall, Portal, HealingPotion, ManaPotion, Gold, Item }
 public class Tile(TileType type) {
     public TileType Type { get; set; } = type;
 }
@@ -2877,7 +2996,8 @@ public static List<DeityEnum> DeityList = Enum.GetValues(typeof(DeityEnum)).Cast
 // Room global variables
 public static double GrowthAmount = 0;
 public static Tile[,] Room = new Tile[0, 0];
-public static RoomGenerator RoomGen = new();    public static List<Enemy> enemies = [];
+public static RoomGenerator RoomGen = new();    
+public static List<Enemy> enemies = [];
 public static bool RoomClear = false;
 public static Random RNG = new();
 public static string Menu = "";
