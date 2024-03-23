@@ -1,21 +1,34 @@
-﻿using static System.Threading.Thread;
+﻿using System.ComponentModel;
+using static System.Threading.Thread;
 
 public class Program {
 public static dynamic player;
 // public static Warrior Sacrifice = new(25, 550, ConsoleColor.DarkRed, "SACRIFICE"); // Warrior equivalent
 // public static Mage Enigma = new(13, 550, ConsoleColor.DarkMagenta, "ENIGMA"); // Mage equivalent
 // public static Archer Harvest = new(40, 650, ConsoleColor.DarkGreen, "HARVEST"); // Archer equivalent
-public class Archer(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "Archer", int HP = 10, double DMGMultiplier = 1, double arrows = 10) : Character(tspeed, tduration, color, name, job, HP, DMGMultiplier) {
+public class Archer(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "Archer", bool is_player = false, int HP = 10, double DMGMultiplier = 1, double arrows = 10) : Character(tspeed, tduration, color, name, job, is_player, HP, DMGMultiplier) {
         public string weapon_type = "Bow";
         public double arrows = arrows;
+        public List<string> AttackDescriptions = [
+        $"Quick Shot\n     Damage: {player.ATK*0.8} DMG\n     Cost: 1 Arrow\n",
+        $"Multi-Shot\n     Damage: {player.ATL*0.8*0.7} DMG\n     Cost: 3 Arrows\n",
+    ];
     }
-    public class Warrior(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "Warrior", int HP = 10, double DMGMultiplier = 1, double stamina = 100) : Character(tspeed, tduration, color, name, job, HP, DMGMultiplier) {
+    public class Warrior(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "Warrior", bool is_player = false, int HP = 10, double DMGMultiplier = 1, double stamina = 100) : Character(tspeed, tduration, color, name, job, is_player, HP, DMGMultiplier) {
         public string weapon_type = "Blade";
         public double stamina = stamina;
+        public List<string> AttackDescriptions = [
+            $"Quick Slash\n     Damage: {player.ATK} DMG\n     Cost: 10 Stamina\n",
+            $"Heavy Cleave\n     Damage: {player.ATK*2.3} DMG\n     Cost: 25 Stamina\n",
+        ];
     }
-    public class Mage(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "Mage", int HP = 10, double DMGMultiplier = 1, double mana = 100) : Character(tspeed, tduration, color,  name, job, HP, DMGMultiplier) {
+    public class Mage(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "Mage", bool is_player = false, int HP = 10, double DMGMultiplier = 1, double mana = 100) : Character(tspeed, tduration, color,  name, job, is_player, HP, DMGMultiplier) {
         public string weapon_type = "Staff";
         public double mana = mana;
+        public List<string> AttackDescriptions = [
+            $"Fireball\n     Damage: {player.INT*1.2} DMG\n     Cost: 10 Stamina\n",
+            $"Mega Fireball\n     Damage: {player.INT*1.2*2.3} DMG\n     Cost: 25 Stamina\n",
+        ];
     }
 
 public class Item(string name = "???", string description = "???", int x = 0, int y= 0) {
@@ -23,74 +36,39 @@ public class Item(string name = "???", string description = "???", int x = 0, in
         public int x = x, y = y;
     }
 
-public class Weapon(string name = "???", string description = "???", int x = 0, int y = 0, double DMGMultiplier = 1) : Item(name, description, x, y) {
+public class Weapon(string name = "???", string description = "???", string wclass = "None", double DMGMultiplier = 1, int x = 0, int y = 0) : Item(name, description, x, y) {
     public double DMGMultiplier = DMGMultiplier;
+    public string wclass = wclass;
 }
 
 static void Main() {
     Start();
 }
 static void Start() {
-    int choice = GetChoice(0, 0, "Start Game", "Exit");
-    if (choice == 2)
-        Environment.Exit(0);
-    player = new Character();
-    RoomGen = new(7, 30, ConsoleColor.DarkGray, 0, 25, 2, 2, 0.6);
-    RoomGen.SetExits(0, 0, 1, 0);
+    // int choice = GetChoice(0, 0, "Start Game", "Exit");
+    // if (choice == 2)
+    //     Environment.Exit(0);
+    player = new Character(35, 450, ConsoleColor.White, "Player", "???", true);
+    RoomGen = new(7, 30, 0, ConsoleColor.DarkGray, 0, 25, 2, 2, 0.6);
+    RoomGen.SetExits([0,0], [0,0], [1,1], [0,0]);
     RoomGen.InitializeRoom();
     RoomGen.AddItemTile(new Dictionary<Item, int>{
-        {new Item("Wooden Bow", "A wooden bow and a quiver of arrows."), 1},
-        {new Item("Wooden Blade", "Durable, but it gets the job done."), 1},
-        {new Item("Wooden Staff", "It lacks beauty, but it's usable."), 1}});
+        {new Weapon("Wooden Bow", "A wooden bow and a quiver of arrows.", "Archer"), 1},
+        {new Weapon("Wooden Blade", "Durable, but it gets the job done.", "Warrior"), 1},
+        {new Weapon("Wooden Staff", "It lacks beauty, but it's usable.", "Mage"), 1}
+    });
     RoomGen.SetSpawnPoint(3, 1);
     RoomGen.DisplayRoom();
 
-    player = new Character(35, 450, ConsoleColor.White, "Player");
-    player.Narrate("You jolted awake.");
-    player.Talk("Where am I...?");
-    GetChoice(0, 0, "Look around.");
-    player.Narrate("You looked around.");
-    player.Narrate("You seem to be in a dim cave with a faint light in front of you.");
-    player.Narrate("You see three weapons on the ground.");
-    player.Talk("I need to protect myself.");
-    bool flag = true;
-    while (flag) {
-        player.Think("Which should I pick?");
-        GetChoice(0, 0, "Blade", "Bow", "Staff");
-        if (choice == 1) {
-            player.Narrate("A wooden blade. ");
-            choice = GetChoice(5, 100, "Pick up.", "Choose another weapon.");
-            if (choice == 1) {
-                flag = false;
-                player = new Warrior(15, 550, ConsoleColor.White, "Player");
-                player.Acquire(new Weapon("Wooden Blade", "Durable, but it gets the job done.", 1));
-            }
-        } else if (choice == 2) {
-            player.Narrate("A wooden bow and a quiver of arrows.");
-            choice = GetChoice(5, 100, "Pick up.", "Choose another weapon.");
-            if (choice == 1) {
-                flag = false;
-                player = new Archer(15, 550, ConsoleColor.White, "Player");
-                player.Acquire(new Weapon("Wooden Bow", "Could use some fixing, but it works.", 1));
-            }
-        } else {
-            player.Narrate("A wooden staff.");
-            choice = GetChoice(5, 100, "Pick up.", "Choose another weapon.");
-            if (choice == 1) {
-                flag = false;
-                player = new Mage(15, 550, ConsoleColor.White, "Player");
-                player.Acquire(new Weapon("Wooden Staff", "It lacks beauty, but usable.", 1));
-            }
-            
-        }
-    }
-    Console.Write("\nPress any key to continue...");
-    Console.ReadKey();
+    if (player.weapon.wclass == "Archer")
+        player = new Archer(35, 450, ConsoleColor.White, "Player", "Archer", true);
+    else if (player.weapon.wclass == "Warrior")
+        player = new Warrior(35, 450, ConsoleColor.White, "Player", "Warrior", true);
+    else if (player.weapon.wclass == "Mage")
+        player = new Mage(35, 450, ConsoleColor.White, "Player", "Mage", true);
+
     player.UpdateStats(true);
     Console.Clear();
-    RoomGen = new();
-    RoomGen.InitializeRoom();
-    RoomGen.DisplayRoom();
 }
 
 public class Character {
@@ -110,10 +88,12 @@ public class Character {
     public int spawnX = NextInt(1, 5), spawnY = NextInt(1, 5);
     public Weapon weapon;
     public List<Item> inventory = [];
-    public Character(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "???", int HP = 10, double DMGMultiplier = 1) {
+    public bool is_player;
+    public Character(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "???", bool is_player = false, int HP = 10, double DMGMultiplier = 1) {
         // Dialogue variables
         this.X = spawnX;
         this.Y = spawnY;
+        this.is_player = is_player;
         this.tspeed = tspeed;
         this.tduration = tduration;
         this.color = color;
@@ -167,17 +147,28 @@ public class Character {
     public bool Acquire(dynamic item) {
         Narrate($"Name: {item.name}");
         Narrate($"Description: {item.description}");
-        if (item.GetType() == typeof(Weapon))
-            Narrate("Warning: Acquiring this will determine your permanent class.");
+        
         if (GetChoice(0, 0, "Acquire", "Ignore") == 1) {
-            inventory.Add(item);
-            this.weapon = item;
-            return true;
+            if (item.GetType() == typeof(Weapon)) {
+                if (item.wclass == weapon.wclass || weapon.wclass == "None" || first_room) {
+                    if (!(item.wclass == weapon.wclass || weapon.wclass == "None")) {
+                        Talk("I already have a weapon.");
+                        Talk("Should I drop my weapon to pick this one up? (Irreversible)");
+                        if (GetChoice(0, 0, "Yes", "No") == 2)
+                            return false;
+                    }
+                    if (weapon.wclass != "None")
+                        inventory.Remove(weapon);
+                    weapon = item;
+                    inventory.Add(item);
+                    return true;
+                }
+                return false;
+            } else if (item.GetType() == typeof(Item))
+                inventory.Add(item);
         }
-
         return false;
     }
-
     public void ShowInventory() {
         Console.WriteLine("Inventory");
         for (int i = 0; i < inventory.Count; i++)
@@ -203,7 +194,7 @@ public class Character {
     public void Move(int dx, int dy) {
         int newX = X + dx;
         int newY = Y + dy;
-        if (newX >= 0 && newX < RoomGen.xSize && newY >= 0 && newY < RoomGen.ySize && Room[newX, newY].Type != TileType.Wall) {
+        if (newX >= 0 && newX < current_xSize && newY >= 0 && newY < current_ySize && Room[newX, newY].Type != TileType.Wall) {
             X = newX;
             Y = newY;
         }
@@ -355,251 +346,40 @@ public class Character {
             return false;
         }
     }
-    // Sacrifice Skills
 
-    // Decreases Health slightly but increases ATK significantly for the attack.
-    public void BloodStrike(dynamic enemy) {
-            Health -= MaxHealth*0.1 - MaxHealth*0.1*Armor;
-            ATK += 5;
-            UpdateStats();
-            Narrate($"{name} used Blood Strike!");
-            DMG = GetDMG((ATK*1.8)+(MaxHealth*0.05), enemy);
-            if (CheckEvade(DMG, enemy)) 
-                Narrate($"{enemy.name} got hit for {DMG:0} DMG in exchange for {name}'s {MaxHealth*0.1:0} Health!");
-            ATK -= 5;
-            UpdateStats();
-            
-    }
-    // Deals a percentage of the user's missing Health to the enemy.
-    public void LifeDrain(dynamic enemy) {
-        DMG = GetDMG(ATK*0.8+(MaxHealth - Health)*0.25, enemy);
-        Health += MaxHealth*0.1+DMG*0.45;
-        Narrate($"{name} used Life Drain!");
-        if (CheckEvade(DMG, enemy)) {
-            Narrate($"{enemy.name} got hit for {DMG:0} DMG based on 25% of their missing Health!");
-            Narrate($"{name} healed for {DMG*0.45:0} Health!");
-        }
-    }
-    // Reduces Health but increases ATK and SPD for several turns.
-    public void SacrificialPower(dynamic enemy) {
-        Narrate($"{name} used Sacrifical Power!");
-        if (Skill3Timer == 0) {
-            Health -= MaxHealth*0.12 - MaxHealth*0.12*Armor;
-            ATK += 3;
-            SPD += 3;
-            Skill3Timer += 2;
-            Narrate("Gained +3 ATK and +3 SPD for two turns!");
-            UpdateStats();
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-    // Lowers the enemy's DEF and Armor for several turns.
-    public void WeakenResolve(dynamic enemy) {
-        Narrate($"{name} used Weaken Resolve!");
-        if (Skill4Timer == 0) {
-            enemy.DEF -= 6;
-            enemy.UpdateStats();
-            Skill4Timer = 3;
-            Narrate($"{enemy.name} gained -6 DEF for two turns!");
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-    // Significantly reduces Health but deals a significant percentage of it to the enemy.
-    public void UltimateSacrifice(dynamic enemy) {
-        Narrate($"{name} used Ultimate Sacrifice!");
-        DMG = GetDMG(ATK*1.7+enemy.MaxHealth*0.4, enemy);
-        Health -= Health*0.25 - DEF*0.5;
-        Health += MaxHealth*0.1+DMG*0.55;
-        if (CheckEvade(DMG, enemy)) {
-            Narrate($"{enemy.name} got hit for {DMG:0} DMG for 45% of their max Health in exchange for {name}'s  {(Health*0.25 - DEF*0.5):0} Health!");
-            Narrate($"{name} healed for {DMG*0.55} Health!");
-        }
-    }
-    // Enigma Skills
-    // Tinamad na ako
-    public void SoulTrack(dynamic enemy) {
-        DMG = INT*2.5;
-        Narrate($"{name} used Soul Track!");
-        if (CheckEvade(GetDMG(DMG, enemy), enemy))
-            Narrate($"{enemy.name} got hit for {DMG:0} DMG ignoring their armor!");
-    }
-    public void Shadowflame(dynamic enemy) {
-        DMG = INT*1.4;
-        Narrate($"{name} used Shadowflame!");
-        int times = NextInt(1, 3);
-        for (var i = 0; i < times; i++) {
-            FinalDMG = GetDMG(DMG, enemy);
-            if (CheckEvade(FinalDMG, enemy)) {
-                Narrate($"{enemy.name} got hit for {FinalDMG:0} DMG!");
-            }
-        }
-        Narrate($"Shadowflame hit {times} times!");
-    }
-    public void ManaVeil() {
-        Narrate($"{name} used Mana Veil!");
-        if (Skill3Timer == 0) {
-            DEF += 3;
-            SPD += 3;
-            UpdateStats();
-            Narrate($"Gained +3 DEF for two turns!");
-            Skill3Timer = 3;
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-    public void ConjureIllusions(dynamic enemy) {
-        Narrate($"{name} used Conjure Illusions!");
-        if (Skill4Timer == 0) {
-            enemy.ATK -= 3;
-            enemy.SPD -= 3;
-            Skill4Timer = 3;
-            enemy.UpdateStats();
-            Narrate($"{enemy.name} gained -3 ATK and -3 SPD for two turns!");
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-    public void DimensionalRift(dynamic enemy) {
-        Narrate($"{name} used Dimensional Rift!");
-        string str = "";
-        if (Skill5Timer == 0) {
-            SPD += 5;
-            str = $" and {name} gained +5 SPD for two turns";
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-        DMG = GetDMG(INT*2.5, enemy);
-        Skill5Timer = 3;
-        
-        if (CheckEvade(DMG, enemy)) 
-            Narrate($"{enemy.name} got hit for {DMG:0} DMG{str}!");
-    }
-    // Harvest Skills
-    public void ThornedWrath(dynamic enemy) {
-         Narrate($"{name} used Thorned Wrath!");
-         DMG = GetDMG(ATK*1.5+LCK*1.5, enemy);
-        if (CheckEvade(DMG, enemy)) 
+    // Archer
+
+    public void LightAttack(dynamic enemy, string skill_name) {
+        if (job == "Archer") 
+            DMG = GetDMG(ATK*0.8, enemy);
+         else if (job == "Warrior") 
+            DMG = GetDMG(ATK, enemy);
+         else if (job == "Mage") 
+            GetDMG(INT, enemy);
+
+        Narrate($"{name} used {skill_name}!");
+        if (CheckEvade(DMG, enemy))
             Narrate($"{enemy.name} got hit for {DMG:0} DMG!");
+    }
+    
+    public void HeavyAttack(dynamic enemy, string skill_name) {
+        for (int i = 0; i < 3; i++) {
+            if (job == "Archer")
+                DMG = GetDMG(ATK*0.8, enemy);
+            else if (job == "Warrior")
+                DMG = GetDMG(ATK, enemy);
+            else if (job == "Mage")
+                GetDMG(INT, enemy);
 
-        double chance = RNG.NextDouble();
-        if (LCK*0.04 > chance) {
-            double HealedAmount = DMG*RNG.NextDouble()*0.04;
-            Health += HealedAmount;
-            Narrate($"{name} gained {HealedAmount:0} Health!");
-        }
-    }
-    public void LuckyPunch(dynamic enemy) {
-        Narrate($"{name} used Lucky Punch!");
-        DMG = GetDMG(NextInt(Convert.ToInt32(LCK), Convert.ToInt32(LCK*2.5)), enemy);
-        if (CheckEvade(DMG, enemy)) 
-            Narrate($"{enemy.name} got hit for {DMG:0} DMG based on luck!");
-    }
-    public void Growth() {
-        Narrate($"{name} used Growth!");
-        if (Skill3Timer == 0) {
-            double HealedAmount = MaxHealth*0.25; 
-            GrowthAmount = HealedAmount;
-            MaxHealth += HealedAmount;
-            Health += HealedAmount;
-            Skill3Timer = 3;
-            Narrate($"Gained {HealedAmount} max Health for two turns!");
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-    public void Wither(dynamic enemy) {
-        Narrate($"{name} used Wither!");
-        if (Skill4Timer == 0) {
-            enemy.SPD -= 3;
-            enemy.INT -= 3;
-            Skill4Timer = 3;
-            Narrate($"{enemy.name} gained -3 SPD and -3 INT!");
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-    public void RootedRampage(dynamic enemy) {
-        int times = NextInt(3, 6);
-        Narrate($"{name} used Rooted Rampage!");
-        for (var i = 0; i < times; i++) {
-            DMG = GetDMG(LCK*1.5, enemy);
+            Narrate($"{name} used {skill_name}!");
             if (CheckEvade(DMG, enemy))
-                Narrate($"{enemy.name} got hit for {DMG:0} DMG based on luck!");
-        }
-        Narrate($"Rooted Rampage hit {times} times!");
-    }
-
-    // End Skills
-    public void SoulBleed(dynamic enemy) {
-        Narrate($"{name} used Soul Bleed!");
-        DMG = GetDMG(ATK*1.7, enemy, true);
-        if (CheckEvade(DMG, enemy)) {
-            Narrate($"{enemy.name} got hit for {DMG:0} DMG ignoring armor!");
-            for (int i = 0; i < 3; i++) {
-                double Bleed = GetDMG(enemy.MaxHealth*0.09, enemy, true);
-                enemy.Health -= Bleed;
-                Narrate($"{enemy.name} bled for {Bleed} DMG ignoring armor!");
-            }
-        }
-    }
-
-    public void VoidSlash(dynamic enemy) {
-        Narrate($"{name} used Void Slash!");
-        int times = NextInt(1, 3);
-        for (int i = 0; i < times; i++)
-        {
-            DMG = GetDMG(ATK*1.2, enemy);
-            if (CheckEvade(DMG, enemy)) 
                 Narrate($"{enemy.name} got hit for {DMG:0} DMG!");
         }
-        Narrate($"Void Slash hit {times} times!");
     }
-    
-    public void ShroudedMist() {
-        Narrate($"{name} used Shrouded Mist!");
-        if (Skill3Timer == 0) {
-            SPD += 3;
-            LCK += 3;
-            Skill3Timer = 3;
-            Narrate($"Gained +3 SPD and +2 LCK!");
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-
-    public void StealStrength(dynamic enemy) {
-        Narrate($"{name} used Steal Strength!");
-        if (Skill4Timer == 0) {
-            enemy.ATK -= 4;
-            ATK += 4;
-            Narrate($"Gained +4 ATK and the enemy gained -4 ATK for two turns!");
-        } else {
-            Narrate($"This skill is already in play!");
-            Narrate($"Effect will last for two more turns!");
-        }
-    }
-
-    public void Annhilation(dynamic enemy) {
-        Narrate($"{name} used Annhilation!");
-        DMG = GetDMG(Math.Clamp(ATK*1.2+ATK*0.2*Math.Max(1, TotalKills), 0, ATK*20), enemy);
-        if (CheckEvade(DMG, enemy))
-            Narrate($"{enemy.name} got hit for {DMG:0} DMG based on {name}'s kills!");
-    }
-    
 }
 
 
-public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "???", int HP = 10, double DMGMultiplier = 1) : Character(tspeed, tduration, color, name, job, HP, DMGMultiplier) {
+public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "???", bool is_player = false, int HP = 10, double DMGMultiplier = 1) : Character(tspeed, tduration, color, name, job, is_player, HP, DMGMultiplier) {
     public bool IsDefeated = false;
     public bool IsBoss = false;
     public void Initialize() {
@@ -758,7 +538,7 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
                 newY = Y + dy[direction];
 
             // Check if the new position is within bounds and not a wall
-            if (newX >= 0 && newX < RoomGen.xSize && newY >= 0 && newY < RoomGen.ySize && Room[newX, newY].Type != TileType.Wall)
+            if (newX >= 0 && newX < current_xSize && newY >= 0 && newY < current_ySize && Room[newX, newY].Type != TileType.Wall)
             {
                 X = newX;
                 Y = newY;
@@ -769,27 +549,33 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
 }
 
 public class RoomGenerator {
-    public int xSize, ySize, walls, enemyCount, minWallLength, maxWallLength;
+    public int xSize, ySize, walls, enemyCount, minWallLength, maxWallLength, id, exitDirection, exitNum;
     public double horizontalPercentage;
     public ConsoleColor room_color;
-    public int[] exits = [0, 0, 0, 0];
+    public int[][] exits, exitPositions;
     public List<Item> itemsOnGround = [];
-    public RoomGenerator(int x = 0, int y = 0, ConsoleColor room_color = ConsoleColor.DarkGray, int enemyCount = -1, int walls = -1, int minWallLength = 1, int maxWallLength = 4, double horizontalPercentage = 0.5) {
+    public RoomGenerator(int x = 0, int y = 0, int id = 0, ConsoleColor room_color = ConsoleColor.DarkGray, int enemyCount = -1, int walls = -1, int minWallLength = 1, int maxWallLength = 4, double horizontalPercentage = 0.5) {
+        this.id = id;
         this.room_color = room_color;
         this.walls = walls;
         this.enemyCount = enemyCount;
         this.minWallLength = minWallLength;
         this.maxWallLength = maxWallLength;
         this.horizontalPercentage = horizontalPercentage;
+        this.exits = [[0,0], [0,0], [0,0], [0,0]];
+        this.exitPositions = [[0,0], [0,0], [0,0], [0,0]];
+        this.exitNum = NextInt(1, 4);
 
         if (x == 0 && y == 0)
-            xSize = ySize = NextInt(10, 15);
+            xSize = ySize = NextInt(15, 20);
         else {
             xSize = x;
             ySize = y;
         }
     }
         public void InitializeRoom() {
+            current_xSize = xSize;
+            current_ySize = ySize;
             RoomClear = false;
             Room = new Tile[xSize, ySize];
             // Set all tiles as empty tiles
@@ -811,35 +597,47 @@ public class RoomGenerator {
             }
 
             if (walls == -1)
-                InitializeWalls(xSize*ySize/2);
+                InitializeWalls(xSize*ySize/10);
             else
                 InitializeWalls(walls);
             
             if (enemyCount == -1)
-                InitializeEnemies(3+xSize*ySize/2/2); 
+                InitializeEnemies(NextInt(0, xSize*ySize/25)); 
             else
                 InitializeEnemies(enemyCount); 
 
             // InitializeItems(NextInt(6+player.Stage, 15+player.Stage), NextInt(5+player.Stage, 10+player.Stage));
             
             // Randomizes and teleports player to random spawnpoint.
-            SetSpawnPoint(NextInt(1, xSize-2), NextInt(1, ySize-2));
+            // SetSpawnPoint(NextInt(1, xSize-2), NextInt(1, ySize-2));
     }
     public void SetSpawnPoint(int x, int y) {
         player.X = player.spawnX = x;
         player.Y = player.spawnY = y;
     }
 
-    public void SetExits(params int[] exits) {
-        if (exits.Length == 4)
+    public void SetExits(params int[][] exits) {
+        if (exits.Length == 4) {
             this.exits = exits;
-        else if (exits.Length < 4) {
-            List<int> exitList = [.. exits];
-            for (int i = 0; i < 4 - exits.Length; i++)
-                exitList.Add(0);
-            this.exits = [.. exitList];
-        } else if (exits.Length == 0 || exits.Length > 4)
-            this.exits = [NextInt(1), NextInt(1), NextInt(1), NextInt(1), NextInt(1)];
+        } else if (exits.Length == 0 || exits.Length > 4) {
+            this.exits = [[NewExit(0), NewRoomId()], [NewExit(1), NewRoomId()], [NewExit(2), NewRoomId()], [NewExit(3), NewRoomId()]];
+        }
+    }
+
+    public void SetExit(int position, int[] exit) {
+        this.exits[position] = exit;
+    }
+    public int NewExit(int direction) {
+        if (exitDirection == direction)
+            return 1;
+        else if (exitNum > 0) {
+            exitNum--;
+            return NextInt(2);
+        } else return 0;
+    }
+    public int NewRoomId() {
+        room_id++;
+        return room_id;
     }
     public void InitializeEnemies(int maxEnemies) {
         enemies.Clear();
@@ -899,7 +697,7 @@ public class RoomGenerator {
         }
     }
 
-    private void InitializeWalls(int numOfWalls) {
+    public void InitializeWalls(int numOfWalls) {
         for (int i = 0; i < numOfWalls; i++) {
             int x = NextInt(1, xSize - 2);
             int y = NextInt(1, ySize - 2);
@@ -941,14 +739,20 @@ public class RoomGenerator {
                 Room[xSize - 2, y] = new Tile(TileType.Empty);
         }
         
+        InitializeExits();
+    }
+    public void InitializeExits() {
         for (int i = 0; i < 4; i++) {
-            int[][] outer_tiles = [[xSize/2, 0], [0, ySize/2], [xSize/2, ySize - 1], [xSize - 1, ySize / 2]];
+            int[][] outer_tiles = [[current_xSize/2, 0], [0, current_ySize/2], [current_xSize/2, current_ySize - 1], [current_xSize - 1, current_ySize / 2]];
             int ox = outer_tiles[i][0];
             int oy = outer_tiles[i][1];
-            if (exits[i] == 1)
-                Room[ox, oy] = new Tile(TileType.Empty);
+            if (exits[i][0] == 1) {
+                Room[ox, oy] = new Tile(TileType.Exit);
+                exitPositions[i][0] = ox;
+                exitPositions[i][1] = oy;
+            }
 
-            int[][] inner_tiles = [[xSize/2, 1], [1, ySize/2], [xSize/2, ySize - 2], [xSize - 2, ySize / 2]];
+            int[][] inner_tiles = [[current_xSize/2, 1], [1, current_ySize/2], [current_xSize/2, current_ySize - 2], [current_xSize - 2, current_ySize / 2]];
             int ix = inner_tiles[i][0];
             int iy = inner_tiles[i][1];
             Room[ix, iy] = new Tile(TileType.Empty);
@@ -1010,14 +814,34 @@ public class RoomGenerator {
                 Room[player.X, player.Y] = new Tile(TileType.Empty);
                 break;
             case TileType.Item:
-                foreach (Item item in itemsOnGround)
+                for (int i = 0; i < itemsOnGround.Count; i++)
                 {
+                    dynamic item = itemsOnGround[i];
                     if (item.x == player.X && item.y == player.Y) {
                         bool is_acquired = player.Acquire(item);
                         if (is_acquired)
                             Room[player.X, player.Y] = new Tile(TileType.Empty);
                     }
                 }
+                break;
+            case TileType.Exit:
+                RoomGen = new();
+                RoomGen.SetExits();
+                RoomGen.InitializeRoom();
+                int[][] outer_tiles = [[xSize/2, 0], [0, ySize/2], [xSize/2, ySize - 1], [xSize - 1, ySize / 2]];
+                int[][] current_outer_tiles = [[current_xSize/2, current_ySize - 1], [current_xSize - 1, current_ySize/2], [current_xSize/2, 0], [0, current_ySize / 2]];
+                int exitDirection = 0;
+                for (int j = 0; j < 4; j++) {
+                    Console.WriteLine($"{outer_tiles[j][0]}, {outer_tiles[j][1]}");
+                    if (player.X == outer_tiles[j][0] && player.Y == outer_tiles[j][1])
+                        exitDirection = j;
+                }
+                SetExit(exitDirection, [1, exits[exitDirection][1]]);
+                InitializeExits();
+                RoomGen.SetSpawnPoint(current_outer_tiles[exitDirection][0], current_outer_tiles[exitDirection][1]);
+                player.X = player.spawnX;
+                player.Y = player.spawnY;
+                RoomGen.DisplayRoom();
                 break;
             }
         }
@@ -1032,7 +856,7 @@ public class RoomGenerator {
                 Sleep(300);
         }
 
-        xSize = ySize = NextInt(10, 15);
+        xSize = ySize = NextInt(20, 30);
         player.Stage++;
         enemies.Clear();
         InitializeRoom();
@@ -1104,18 +928,15 @@ public class RoomGenerator {
             Divider();
             // Chooses a random skill based on the enemy's deity. The percentage of which skill to use is specific for each deity.
             double ChosenSkill = RNG.NextDouble();
-            switch (enemy.Deity) {
-            case DeityEnum.Sacrifice:
-                SacrificeSkills(ChosenSkill, enemy);
+            switch (enemy.job) {
+            case "Archer":
+                ArcherSkills(ChosenSkill, enemy);
                 break;
-            case DeityEnum.Enigma:
-                EnigmaSkills(ChosenSkill, enemy);
+            case "Warrior":
+                WarriorSkills(ChosenSkill, enemy);
                 break;
-            case DeityEnum.Harvest:
-                HarvestSkills(ChosenSkill, enemy);
-                break;
-            case DeityEnum.End:
-                EndSkills(ChosenSkill, enemy);
+            case "Mage":
+                MageSkills(ChosenSkill, enemy);
                 break;
             }
             if(!IsOver) CheckHealth(enemy);
@@ -1125,63 +946,30 @@ public class RoomGenerator {
         }
     }
 
-    public static void SacrificeSkills(double ChosenSkill, Enemy enemy) {
-        if (ChosenSkill < 0.3)
-            enemy.BloodStrike(player);
-        else if (ChosenSkill < 0.6)
-            enemy.LifeDrain(player);
-        else if (ChosenSkill < 0.75)
-            enemy.SacrificialPower(player);
-        else if (ChosenSkill < 0.9)
-            enemy.WeakenResolve(player);
+    public static void ArcherSkills(double ChosenSkill, Enemy enemy) {
+        if (ChosenSkill < 0.7)
+            enemy.LightAttack(player, "Quick Shot");
         else
-            enemy.UltimateSacrifice(player);
+            enemy.HeavyAttack(player, "Multi-Shot");
     }
-    public static void EnigmaSkills(double ChosenSkill, Enemy enemy) {
-        if (ChosenSkill < 0.3)
-            enemy.SoulTrack(player);
-        else if (ChosenSkill < 0.6)
-            enemy.Shadowflame(player);
-        else if (ChosenSkill < 0.75)
-            enemy.ManaVeil();
-        else if (ChosenSkill < 0.9)
-            enemy.ConjureIllusions(player);
+    public static void WarriorSkills(double ChosenSkill, Enemy enemy) {
+        if (ChosenSkill < 0.7)
+            enemy.LightAttack(player, "Quick Slash");
         else
-            enemy.DimensionalRift(player);
+            enemy.HeavyAttack(player, "Heavy Cleave");
     }
-    public static void HarvestSkills(double ChosenSkill, Enemy enemy) {
-        if (ChosenSkill < 0.3)
-            enemy.ThornedWrath(player);
-        else if (ChosenSkill < 0.6)
-            enemy.LuckyPunch(player);
-        else if (ChosenSkill < 0.75)
-            enemy.Growth();
-        else if (ChosenSkill < 0.9)
-            enemy.Wither(player);
+    public static void MageSkills(double ChosenSkill, Enemy enemy) {
+        if (ChosenSkill < 0.7)
+            enemy.LightAttack(player, "Fireball");
         else
-            enemy.RootedRampage(player);
+            enemy.HeavyAttack(player, "Mega Fireball");
     }
-    
-    public static void EndSkills(double ChosenSkill, Enemy enemy) {
-        if (ChosenSkill < 0.3)
-            enemy.SoulBleed(player);
-        else if (ChosenSkill < 0.6)
-            enemy.VoidSlash(player);
-        else if (ChosenSkill < 0.75)
-            enemy.ShroudedMist();
-        else if (ChosenSkill < 0.9)
-            enemy.StealStrength(player);
-        else
-            enemy.Annhilation(player);
-    }
-
 
     public static void PlayerTurn(Enemy enemy) {
         bool StayTurn = false;
         do {
             if (!IsOver) {
                 StayTurn = false;
-                EvaluateTimers(enemy);
             
                 Divider();
                 player.WriteStats();
@@ -1210,109 +998,15 @@ public class RoomGenerator {
         } while(StayTurn);
         if(!IsOver) CheckHealth(enemy);
     }
-
-    public static void EvaluateTimers(Enemy enemy) {
-        // Evaluates the timers of each skill and their effects. Needs optimization.
-        foreach (KeyValuePair<dynamic, dynamic> kvp in new Dictionary<dynamic, dynamic>(){{player, enemy}, {enemy, player}}) {
-                if (kvp.Key.Skill3Timer != 0)
-                    kvp.Key.Skill3Timer--;
-                if (kvp.Key.Skill4Timer != 0)
-                    kvp.Key.Skill4Timer--;
-                if (kvp.Key.Skill5Timer != 0)
-                    kvp.Key.Skill5Timer--;
-                switch(kvp.Key.Deity) {
-                case DeityEnum.Sacrifice:
-                    if (kvp.Key.Skill3Timer == 1) {
-                        kvp.Key.ATK -= 3;
-                        kvp.Key.SPD -= 3;
-                    } else if (kvp.Key.Skill4Timer == 1) {
-                        kvp.Value.DEF += 6;
-                    }
-                    break;
-                case DeityEnum.Enigma:
-                    if (kvp.Key.Skill3Timer == 1) {    
-                        kvp.Key.DEF -= 3;
-                        kvp.Key.SPD -= 3;
-                    } else if (kvp.Key.Skill4Timer == 1) {
-                        kvp.Value.ATK += 3;
-                        kvp.Value.SPD += 3;
-                    } else if (kvp.Key.Skill5Timer == 1) {
-                        kvp.Value.SPD -= 5;
-                    }
-                    break;
-                case DeityEnum.Harvest:
-                if (kvp.Key.Skill3Timer == 1) {
-                    kvp.Key.MaxHealth -= GrowthAmount;
-                    kvp.Key.Health -= GrowthAmount;
-                } else if (kvp.Key.Skill4Timer == 1) {
-                    kvp.Value.SPD += 3;
-                    kvp.Value.INT += 3;
-                }
-                    break;
-                case DeityEnum.End:
-                    if (kvp.Key.Skill1Timer == 1) {
-                        kvp.Key.SPD -= 3;
-                        kvp.Key.LCK -= 3;
-                    } else if (kvp.Key.Skill4Timer == 1) {
-                        kvp.Value.ATK += 4;
-                        kvp.Key.ATK -= 4;
-                    }
-                    break;
-                }
-            }
-    }
-
     public static bool Attack(Enemy enemy) {
         int Choice, maxChoices;
         bool ValidChoice;
         bool StayTurn = false;
         do {
             Console.Clear();
-            List<string> AttackDescriptions = [];
             player.UpdateStats();
-            // Changes the choices depending on the user's deity.
-            switch(player.Deity) {
-            case DeityEnum.Sacrifice:
-                AttackDescriptions = 
-                [
-                    $"Blood Strike\n     Damage: {(5+player.ATK)*1.8+player.MaxHealth*0.05:0} DMG\n     Cost: {player.MaxHealth*0.1} Health\n", 
-                    $"Life Drain\n     Damage: {player.ATK*0.8+(player.MaxHealth - player.Health)*0.25:0} DMG (Scales with Enemy Missing Health)\n     Effect: Heal {player.MaxHealth*0.1+(player.MaxHealth - player.Health)*0.25*0.45:0} Health\n", 
-                    "Sacrificial Power\n     Effect: +3 ATK & +3 SPD\n", 
-                    "Weaken Resolve\n     Effect: Enemy -6 DEF\n", 
-                    $"Ultimate Sacrifice\n     Damage: {player.ATK*0.6+enemy.MaxHealth*0.4:0} DMG\n     Cost: {player.Health*0.25} Health\n     Effect: Heal {(player.ATK*0.6+enemy.MaxHealth*0.4)*0.55:0} Health\n"
-                ];
-                break;
-            case DeityEnum.Enigma:
-                AttackDescriptions = 
-                [
-                    $"Soul Track\n     Damage: {player.INT*1.5:0} INT DMG\n", 
-                    $"Shadowflame\n     Damage: {player.INT*0.7:0} INT DMG 1-3 times\n", 
-                    $"Mana Veil\n     Effect: +3 DEF & +3 SPD\n", 
-                    $"Conjure Illusions\n     Effect: Enemy -3 ATK & -3 SPD\n", 
-                    $"Dimensional Rift\n     Damage: {player.INT*2.5:0} DMG\n     Effect: +5 SPD\n"
-                ];
-                break;
-            case DeityEnum.Harvest:
-                AttackDescriptions = 
-                [
-                    $"Thorned Wrath\n     Damage: {player.ATK*1.5+player.LCK*1.5:0} DMG\n     Effect: {player.LCK*0.04*100}% chance to heal {player.ATK*1.5+player.LCK*1.5*0.5:0} Health\n", 
-                    $"Lucky Punch\n     Damage: {player.LCK*0.5:0}-{player.LCK*2.5*1.5:0} DMG\n", 
-                    $"Growth\n     Effect: Gain {player.MaxHealth*0.25:0} Health for two turns\n", 
-                    $"Wither\n     Effect: Enemy -3 SPD & -3 INT\n", 
-                    $"Rooted Rampage\n     Damage: {(player.LCK*1.5).ToString("0")} DMG 3-6 times\n"
-                ];
-                break;
-            case DeityEnum.End:
-                    AttackDescriptions = 
-                [
-                    $"Soul Bleed\n     Damage: {player.ATK*1.2:0} DMG & {enemy.MaxHealth*0.06:0} DMG 0-3 times\n", 
-                    $"Void Slash\n     Damage: {player.ATK*0.9:0} DMG 1-3 times\n", 
-                    $"Shrouded Mist\n     Effect: +3 SPD & +3 LCK\n", 
-                    $"Steal Strength\n     Effect: +4 ATK & Enemy -4 ATK\n", 
-                    $"Annhilation\n     Damage: {player.ATK*0.5+player.ATK*0.1*(player.TotalKills+1):0} DMG\n"
-                ];
-                break;
-            }
+            List<string> AttackDescriptions;
+            AttackDescriptions = player.weapon.AttackDescriptions;
             AttackDescriptions.Add("Cancel");
 
             // Gets the input from the player using a modified GetChoice();
@@ -1325,99 +1019,42 @@ public class RoomGenerator {
             Console.Write("> ");
             ValidChoice = int.TryParse( Console.ReadKey().KeyChar + "", out Choice);
 
-            if (!ValidChoice || Choice < 1 || Choice > maxChoices) {
+            if (!ValidChoice || Choice < 1 || Choice > maxChoices)
                 Console.Clear();
-            }
+                
         } while (!ValidChoice || Choice < 1 || Choice > maxChoices);
 
         Console.Clear();
 
         // Activates the selected skill
-        switch(player.Deity) {
-            case DeityEnum.Sacrifice:
+        switch(player.job) {
+            case "Archer":
             switch (Choice) {
             case 1:
-                player.BloodStrike(enemy);
+                player.LightAttack(enemy, "Quick Shot");
                 break;
             case 2:
-                player.LifeDrain(enemy);
-                break;
-            case 3:
-                player.SacrificialPower(enemy);
-                break;
-            case 4:
-                player.WeakenResolve(enemy);
-                break;
-            case 5:
-                player.UltimateSacrifice(enemy);
-                break;
-            case 6:
-                return true;
-            }
-            break;
-            case DeityEnum.Enigma:
-            switch (Choice) {
-            case 1:
-                player.SoulTrack(enemy);
-                break;
-            case 2:
-                player.Shadowflame(enemy);
-                break;
-            case 3:
-                player.ManaVeil();
-                break;
-            case 4:
-                player.ConjureIllusions(enemy);
-                break;
-            case 5:
-                player.DimensionalRift(enemy);
-                break;
-            case 6:
-                StayTurn = true;
+                player.HeavyAttack(enemy, "Multi-Shot");
                 break;
             }
             break;
-            case DeityEnum.Harvest:
+            case "Warrior":
             switch (Choice) {
             case 1:
-                player.ThornedWrath(enemy);
+                player.LightAttack(enemy, "Quick Slash");
                 break;
             case 2:
-                player.LuckyPunch(enemy);
-                break;
-            case 3:
-                player.Growth();
-                break;
-            case 4:
-                player.Wither(enemy);
-                break;
-            case 5:
-                player.RootedRampage(enemy);
-                break;
-            case 6:
-                StayTurn = true;
+                player.HeavyAttack(enemy, "Heavy Cleave");
                 break;
             }
             break;
-            case DeityEnum.End:
+            case "Mage":
             switch (Choice) {
             case 1:
-                player.SoulBleed(enemy);
+                player.LightAttack(enemy, "Fireball");
                 break;
             case 2:
-                player.VoidSlash(enemy);
-                break;
-            case 3:
-                player.ShroudedMist();
-                break;
-            case 4:
-                player.StealStrength(enemy);
-                break;
-            case 5:
-                player.Annhilation(enemy);
-                break;
-            case 6:
-                StayTurn = true;
+                player.HeavyAttack(enemy, "Mega Fireball");
                 break;
             }
             break;
@@ -1428,10 +1065,9 @@ public class RoomGenerator {
         return StayTurn;
     }
     public static void BattleInventory() {
-        Dictionary<int, string> items = player.GetInventory();
-        for (int i = 0; i < items.Count; i++) {
+        for (int i = 0; i < 9; i++) {
             try {
-                Console.WriteLine($"{i+1}. {items[i]}");
+                Console.WriteLine($"{i+1}. {player.inventory[i]}");
             } catch {
                 Console.WriteLine($"{i+1}. Empty");
             }
@@ -1446,7 +1082,6 @@ public class RoomGenerator {
             player.Skill3Timer = player.Skill4Timer = enemy.Skill3Timer = enemy.Skill4Timer = enemy.Skill5Timer = player.Skill5Timer = 1;
             IsOver = true;
             player.Narrate("You successfully fled from battle!");
-            EvaluateTimers(enemy);
             Console.ReadKey();
         } else {
             player.Narrate("You failed to flee.");
@@ -2679,7 +2314,11 @@ public class RoomGenerator {
     }
 
     public void PrintRoom() {
-        Console.WriteLine($"player: ({player.X}, {player.Y})");
+        Console.WriteLine($"player: ({player.X}, {player.Y}), ids: {room_id}");
+        for (int i = 0; i < exits.Length; i++)
+        {
+            Console.Write($"({exits[i][0]}, {exits[i][1]}), ");
+        }
         Console.WriteLine("\n\n");
         
         for (int i = 0; i < xSize; i++) {
@@ -2711,6 +2350,9 @@ public class RoomGenerator {
                         break;
                     case TileType.Item:
                         WriteTile("? ", ConsoleColor.Yellow);
+                        break;
+                    case TileType.Exit:
+                        WriteTile(". ", room_color);
                         break;
                     }
                 }
@@ -2983,7 +2625,7 @@ public static void Print(string str, int speed = 1, int duration = 5, ConsoleCol
 
 
 
-public enum TileType { Empty, Wall, Portal, HealingPotion, ManaPotion, Gold, Item }
+public enum TileType { Empty, Wall, Portal, HealingPotion, ManaPotion, Gold, Item, Exit }
 public class Tile(TileType type) {
     public TileType Type { get; set; } = type;
 }
@@ -3002,12 +2644,13 @@ public static bool RoomClear = false;
 public static Random RNG = new();
 public static string Menu = "";
 public static char input = ' ';
-
+public static int current_xSize, current_ySize;
 public static Dictionary<int, string> Interface = [];
+public static bool first_room = true;
 
 // Combat global variables
 public static bool IsOver = false;
-public static int Turn = 0;
+public static int Turn = 0, room_id;
 
 public class Deity(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???") {
     public int tspeed = tspeed, tduration = tduration;
