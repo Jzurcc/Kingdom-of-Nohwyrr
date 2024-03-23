@@ -45,34 +45,21 @@ static void Start() {
         {new Weapon("Wooden Blade", "Durable, but it gets the job done.", "Warrior"), 1},
         {new Weapon("Wooden Staff", "It lacks beauty, but it's usable.", "Mage"), 1}
     });
+
     RoomGen.SetSpawnPoint(3, 1);
     RoomGen.DisplayRoom();
-
-    if (player.weapon.wclass == "Archer")
-        player = new Archer(35, 450, ConsoleColor.White, "Player", "Archer", true);
-    else if (player.weapon.wclass == "Warrior")
-        player = new Warrior(35, 450, ConsoleColor.White, "Player", "Warrior", true);
-    else if (player.weapon.wclass == "Mage")
-        player = new Mage(35, 450, ConsoleColor.White, "Player", "Mage", true);
-
-    player.UpdateStats(true);
-    Console.Clear();
 }
 
 public class Character {
-    public DeityEnum Deity;
     // Dialogue variables
     public int tspeed, tduration;
     public ConsoleColor color;
     // Attribute variables
-    public string name, DeityName, job;
-    public int Skill1Timer, Skill2Timer, Skill3Timer, Skill4Timer, Skill5Timer;
-    public int HP, ATK, DEF, INT, SPD, LCK, GLD, EXP, MaxEXP, EXPDrop, LVL, PTS, IntHealth, IntMaxHealth;
+    public string name, job;
+    public int HP, ATK, DEF, INT, SPD, LCK, GLD, EXP, MaxEXP, EXPDrop, LVL, PTS, IntHealth, IntMaxHealth, TotalKills;
     public double Health, MaxHealth, DMG, Armor, FinalDMG, DMGMultiplier;
-    public dynamic ChosenDeity;
     // Room variables
     public int X, Y, Stage;
-    public int TotalKills, SacrificeKills, EnigmaKills, HarvestKills, EndKills, RoomKills;
     public int spawnX = NextInt(1, 5), spawnY = NextInt(1, 5);
     public Weapon weapon;
     public List<Item> inventory = [];
@@ -80,66 +67,58 @@ public class Character {
     public List<string> AttackDescriptions;
     public Character(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???", string job = "???", bool is_player = false, int HP = 10, double DMGMultiplier = 1) {
         // Dialogue variables
-        this.X = spawnX;
-        this.Y = spawnY;
+        X = spawnX;
+        Y = spawnY;
         this.is_player = is_player;
         this.tspeed = tspeed;
         this.tduration = tduration;
         this.color = color;
+        this.DMGMultiplier = DMGMultiplier;
         // Info variables
         this.name = name;
         this.job = job;
-        this.Stage = 1;
-        this.inventory = [];
-        this.DeityName = "None";
-        this.Deity = DeityEnum.None;
-        this.ChosenDeity = new Deity();
-        this.AttackDescriptions = [];
+        Stage = 1;
+        inventory = [];
+        AttackDescriptions = [];
         // Attribute variables
         this.HP = HP;
-        this.ATK = 10;
-        this.DEF = 10;
-        this.INT = 10;
-        this.SPD = 10;
-        this.LCK = 10;
-        this.LVL = 1;
-        this.PTS = 0;
+        ATK = 10;
+        DEF = 10;
+        INT = 10;
+        SPD = 10;
+        LCK = 10;
+        LVL = 1;
+        PTS = 0;
         // Stats variables
-        this.GLD = 100;
-        this.EXP = 0;
-        this.MaxEXP = 80 + LVL*20;
-        this.Health = 20 + HP*8;
-        this.IntHealth = Convert.ToInt32(Health);
-        this.MaxHealth = Health;
-        this.IntMaxHealth = Convert.ToInt32(MaxHealth);
-        this.DMG = ATK;
-        this.DMGMultiplier = DMGMultiplier;
-        this.FinalDMG = DMG;
-        this.Armor = Math.Clamp(Math.Round(DEF*0.02), 0, 0.5);
-        this.weapon = new();
+        GLD = 100;
+        EXP = 0;
+        MaxEXP = 80 + LVL*20;
+        Health = 20 + HP*8;
+        IntHealth = Convert.ToInt32(Health);
+        MaxHealth = Health;
+        IntMaxHealth = Convert.ToInt32(MaxHealth);
+        DMG = ATK;
+        FinalDMG = DMG;
+        Armor = Math.Clamp(Math.Round(DEF*0.02), 0, 0.5);
+        weapon = new();
         // Skill variables
-        this.Skill1Timer = 0;
-        this.Skill2Timer = 0;
-        this.Skill3Timer = 0;
-        this.Skill4Timer = 0;
-        this.Skill5Timer = 0;
         switch (job) {
             case "Archer":
                 AttackDescriptions = [
                     $"Quick Shot\n     Damage: {player.ATK*0.8} DMG\n     Cost: 1 Arrow\n",
-                    $"Multi-Shot\n     Damage: {player.ATL*0.8*0.7} DMG\n     Cost: 3 Arrows\n",
+                    $"Multi-Shot\n     Damage: {player.ATK*0.8*2} DMG\n     Cost: 3 Arrows\n",
                 ];
                 break;
             case "Warrior":
                 AttackDescriptions = [
                     $"Quick Slash\n     Damage: {player.ATK} DMG\n     Cost: 10 Stamina\n",
-                    $"Heavy Cleave\n     Damage: {player.ATK*2.3} DMG\n     Cost: 25 Stamina\n",
+                    $"Heavy Cleave\n     Damage: {player.ATK*2} DMG\n     Cost: 25 Stamina\n",
                 ];
                 break;
             case "Mage":
                 AttackDescriptions = [
                     $"Fireball\n     Damage: {player.INT*1.2} DMG\n     Cost: 10 Stamina\n",
-                    $"Mega Fireball\n     Damage: {player.INT*1.2*2.3} DMG\n     Cost: 25 Stamina\n",
+                    $"Mega Fireball\n     Damage: {player.INT*1.2*2} DMG\n     Cost: 25 Stamina\n",
                 ];
                 break;
         }
@@ -215,7 +194,7 @@ public class Character {
     public Dictionary<int, string> GetStats() {
         Dictionary<int, string> StatsDict = [];
         StatsDict.Add(1, "   --------------------------------------------");
-        List<string> strings = [string.Format("   Level: {0, -13} Gold: {1}", LVL, GLD), string.Format("   Health: {0:0}/{1, -8} EXP: {2}/{3}", Health, MaxHealth, EXP, MaxEXP), string.Format("   Points: {0, -13} Deity: {1}", PTS, DeityName), "   --------------------------------------------", string.Format("   HP: {0, -16} DEF: {1}", HP, DEF), string.Format("   ATK: {0, -15} INT: {1}", ATK, INT), string.Format("   SPD: {0, -15} LCK: {1}", SPD, LCK), string.Format("   Kills: {0, -13} Room: {1}", TotalKills, Stage)];
+        List<string> strings = [string.Format("   Level: {0, -13} Gold: {1}", LVL, GLD), string.Format("   Health: {0:0}/{1, -8} EXP: {2}/{3}", Health, MaxHealth, EXP, MaxEXP), string.Format("   Points: {0, -13} Deity: {1}", PTS, ""), "   --------------------------------------------", string.Format("   HP: {0, -16} DEF: {1}", HP, DEF), string.Format("   ATK: {0, -15} INT: {1}", ATK, INT), string.Format("   SPD: {0, -15} LCK: {1}", SPD, LCK), string.Format("   Kills: {0, -13} Room: {1}", TotalKills, Stage)];
 
         for (var i = 0; i < strings.Count; i++)
             StatsDict.Add(2+i, strings[i]);
@@ -225,71 +204,13 @@ public class Character {
 
     public void WriteStats() {
         Console.WriteLine($"name: {name}");
-        List<string> strings = ["--------------------------------------------", string.Format("Level: {0, -13} Gold: {1}", LVL, GLD), string.Format("Health: {0:0}/{1, -8} EXP: {2}/{3}", Health, MaxHealth, EXP, MaxEXP), string.Format("Points: {0, -13} Deity: {1}", PTS, DeityName), "--------------------------------------------", string.Format("HP: {0, -16} DEF: {1}", HP, DEF), string.Format("ATK: {0, -15} INT: {1}", ATK, INT), string.Format("SPD: {0, -15} LCK: {1}", SPD, LCK),  string.Format("Kills: {0, -13}", TotalKills)];
+        List<string> strings = ["--------------------------------------------", string.Format("Level: {0, -13} Gold: {1}", LVL, GLD), string.Format("Health: {0:0}/{1, -8} EXP: {2}/{3}", Health, MaxHealth, EXP, MaxEXP), string.Format("Points: {0, -13} Deity: {1}", PTS, ""), "--------------------------------------------", string.Format("HP: {0, -16} DEF: {1}", HP, DEF), string.Format("ATK: {0, -15} INT: {1}", ATK, INT), string.Format("SPD: {0, -15} LCK: {1}", SPD, LCK),  string.Format("Kills: {0, -13}", TotalKills)];
         for (var i = 0; i < strings.Count; i++)
             Console.WriteLine(strings[i]);
     }
 
-    public void SetDeity(DeityEnum deity) {
-        if (deity != DeityEnum.None) {
-            Deity = deity;
-            DeityName = "THE " + deity.ToString().ToUpper();
-            DeityList.Remove(deity);
-        }
-    }
-
     public void Die() {
         player.WriteStats();
-        string DeathMSG = "";
-        string[] DeathMSGs = [
-        "Sacrifice: TO DIE IS TO FEED THE GODS’ HUNGER!",
-        "SACRIFICE: ANOTHER SOUL FEEDS THE BATTLEGROUND!",
-        "SACRIFICE: BLOOD FOR THE BLOOD GOD!",
-        "SACRIFICE: YOUR SCREAMS ECHO IN THE VOID!",
-        "SACRIFICE: FALL IN BATTLE, RISE IN GLORY!",
-        "SACRIFICE: AN HONORABLE DEATH, WARRIOR!",
-        "Sacrifice: YOUR VALOR SHINES EVEN IN DEFEAT!",
-        "Sacrifice: YES! MORE BLOOD FOR THE BLOOD GOD!",
-        "Sacrifice: GLORIOUS! ANOTHER LIFE SPENT IN THE FRAY!",
-
-        "Enigma: I will hold unto the mystery of your end.",
-        "Enigma: Even in death, you leave questions unanswered.",
-        "Enigma: A puzzle completed, a life concluded.",
-        "Enigma: Your story ends, but the secrets linger.",
-        "Enigma: An epilogue written in the stars.",
-        "Enigma: In death, some find answers.",
-        "Enigma: Death, the last enigma you shall unravel.",
-        "Enigma: The final piece of your puzzle placed.",
-        "Enigma: Your legacy, a riddle for ages to come.",
-        
-        "Harvest: The cycle continues, as you return to the earth.",
-        "Harvest: From dust to dust, your essence nourishes the soil.",
-        "Harvest: A seed falls, but a forest awaits.",
-        "Harvest: In death, you fulfill life's final promise.",
-        "Harvest: An end, but also a beginning in the eternal cycle.",
-        "Harvest: A life well lived, a rest well earned.",
-        "Harvest: May your spirit find peace in the eternal garden.",
-        "Harvest: Like leaves in autumn, you too have fallen.",
-        "Harvest: Harvested at season's end, you return to the earth.",
-        
-        "End: Cease.",
-        "End: It is the end.",
-        "End: Your death is meaningless.",
-        "End: The final whisper fades.",
-        "End: An end, predictable and absolute.",
-        "End: You are naught before me.",
-        "End: Become none.",
-        "End: Return to nothing.",
-        "End: Silence now."];
-        if (player.Deity == DeityEnum.Sacrifice)
-            DeathMSG = DeathMSGs[NextInt(8)];
-        else if (player.Deity == DeityEnum.Enigma)
-            DeathMSG = DeathMSGs[NextInt(9, 18)];
-        else if (player.Deity == DeityEnum.Harvest)
-            DeathMSG = DeathMSGs[NextInt(18, 28)];
-        else 
-            DeathMSG = DeathMSGs[NextInt(28, 37)];
-
         Console.WriteLine("\n\n");
         Sleep(300);
         Console.ForegroundColor = ConsoleColor.Red;
@@ -304,7 +225,6 @@ public class Character {
  ▀█████▀   ▀██████▀  ████████▀         ███    █▀      ███    █▀   ▀██████▀    ██████████      ████████▀  █▀     ██████████ ████████▀  
                                                                                                                                       ");
         Console.ForegroundColor = ConsoleColor.White;
-        Print(DeathMSG);
         Console.ReadKey();
         Print("\nDo you wish to play again?");
         int input = GetChoice(0, 0, "Yes", "No");
@@ -322,16 +242,6 @@ public class Character {
         if (updateHealth)
             Health = MaxHealth;
     }
-
-    public bool ChooseDeity(DeityEnum chosen) {
-    int choice = GetChoice(5, 100, "Enter the door.", "Go back.");
-    if (choice == 1) {
-        SetDeity(chosen);
-        return false;
-    } else
-        return true;
-    }
-
 
     // Combat methods
     // Returns a random number from the range of the attack
@@ -375,18 +285,16 @@ public class Character {
     }
     
     public void HeavyAttack(dynamic enemy, string skill_name) {
-        for (int i = 0; i < 3; i++) {
             if (job == "Archer")
-                DMG = GetDMG(ATK*0.8, enemy);
+                DMG = GetDMG(ATK*0.8*2, enemy);
             else if (job == "Warrior")
-                DMG = GetDMG(ATK, enemy);
+                DMG = GetDMG(ATK*2, enemy);
             else if (job == "Mage")
-                GetDMG(INT, enemy);
+                GetDMG(INT*2, enemy);
 
             Narrate($"{name} used {skill_name}!");
             if (CheckEvade(DMG, enemy))
                 Narrate($"{enemy.name} got hit for {DMG:0} DMG!");
-        }
     }
 }
 
@@ -397,8 +305,6 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
     public void Initialize() {
         X = x;
         Y = y;
-        Deity = DeityList[NextInt(DeityList.Count-1)];
-        DeityName = "THE " + Deity.ToString().ToUpper();
         HP = 6;
         ATK = 6;
         DEF = 6;
@@ -407,7 +313,7 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
         LCK = 6;
         LVL = player.Stage;
         PTS = 10+(LVL*2);
-        GetDeityStats();
+        GetClassStats();
         DistributePTS();
         MaxEXP = 80 + LVL*20;
         EXPDrop = NextInt(MaxEXP/4, MaxEXP);
@@ -445,32 +351,26 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
         }
         return 0;
     }
-    public void GetDeityStats() {
-        switch (Deity) {
-        case DeityEnum.Sacrifice:
+    public void GetClassStats() {
+        switch (job) {
+        case "Warrior":
             HP += 5;
             DEF += 3;
             GLD -= 50;
             ATK -= 3;
             SPD -= 3;
             break;
-        case DeityEnum.Enigma:
+        case "Mage":
             INT += 5;
             PTS += 3;
             HP -= 3;
             ATK -= 5;
             break;
-        case DeityEnum.Harvest:
+        case "Archer":
             LCK += 6;
             PTS += 2;
             DEF -= 3;
             SPD -= 5;
-            break;
-        case DeityEnum.End:
-            ATK += 5;
-            SPD += 3;
-            HP -= 3;
-            DEF -= 5;
             break;
         }
         UpdateStats(true);
@@ -532,7 +432,6 @@ public class Enemy(int x, int y, int tspeed = 35, int tduration = 450, ConsoleCo
         player.EXP += EXPDrop;
         player.EvaluateEXP();
         IsDefeated = true;
-        player.Skill3Timer = player.Skill4Timer = Skill3Timer = Skill4Timer = Skill5Timer = player.Skill5Timer = 0;
     }
 
     // Method to randomly move the enemy
@@ -875,6 +774,17 @@ public class RoomGenerator {
                     player.Think("I need to protect myself.");
                     player.Think("There's some weapons around here...");
                 } else {
+                    if (first_room) {
+                        Weapon current_weapon = player.weapon;
+                        if (player.weapon.wclass == "Archer") {
+                            player = new Archer(35, 450, ConsoleColor.White, "Player", "Archer", true);
+                        } else if (player.weapon.wclass == "Warrior")
+                            player = new Warrior(35, 450, ConsoleColor.White, "Player", "Warrior", true);
+                        else if (player.weapon.wclass == "Mage")
+                            player = new Mage(35, 450, ConsoleColor.White, "Player", "Mage", true);
+                        player.weapon = current_weapon;
+                        first_room = false;
+                    }
                     // int[][] current_outer_tiles = [[current_xSize/2, current_ySize - 1], [current_xSize - 1, current_ySize/2], [current_xSize/2, 0], [0, current_ySize / 2]];
                     int exitDirection = 0;
                     int exitId = 0;
@@ -985,7 +895,6 @@ public class RoomGenerator {
             enemy.WriteStats();
             Console.WriteLine();
             Divider();
-            // Chooses a random skill based on the enemy's deity. The percentage of which skill to use is specific for each deity.
             double ChosenSkill = RNG.NextDouble();
             switch (enemy.job) {
             case "Archer":
@@ -1138,7 +1047,6 @@ public class RoomGenerator {
         Console.Clear();
         player.Narrate("You attempted to flee.");
         if (0.4+player.LCK*0.01 > RNG.NextDouble()) {
-            player.Skill3Timer = player.Skill4Timer = enemy.Skill3Timer = enemy.Skill4Timer = enemy.Skill5Timer = player.Skill5Timer = 1;
             IsOver = true;
             player.Narrate("You successfully fled from battle!");
             Console.ReadKey();
@@ -1159,7 +1067,7 @@ public class RoomGenerator {
     }
 
     public void PrintRoom() {
-        Console.Write($"player: ({player.X}, {player.Y}), ids: {room_id}, exitNum: {exitNum}\nroom ids: ");
+        Console.Write($"player: ({player.X}, {player.Y}), ids: {room_id}, exitNum: {exitNum}, player class: {player.GetType()}, first_room: {first_room} \nroom ids: ");
         for (var i = 0; i < rooms.Count; i++)
         {
             Console.Write($"{rooms[i].id},");
@@ -1283,14 +1191,8 @@ public class RoomGenerator {
     }
 
     public static void WriteEnemies(Enemy enemy, int i, int j) {
-        if (enemy.X == i && enemy.Y == j && enemy.Deity == DeityEnum.Sacrifice)
-            WriteTile("! ", ConsoleColor.DarkRed);
-        else if (enemy.X == i && enemy.Y == j && enemy.Deity == DeityEnum.Enigma)
-            WriteTile("! ", ConsoleColor.DarkMagenta);
-        else if (enemy.X == i && enemy.Y == j && enemy.Deity == DeityEnum.Harvest)
-            WriteTile("! ", ConsoleColor.DarkGreen);
-        else if (enemy.X == i && enemy.Y == j && enemy.Deity == DeityEnum.End)
-            WriteTile("! ", ConsoleColor.White);
+        if (enemy.X == i && enemy.Y == j)
+            WriteTile("! ", ConsoleColor.Red);
     }
     public static void WriteTile(string str, ConsoleColor color) {
         Console.ForegroundColor = color;
@@ -1411,11 +1313,8 @@ public enum TileType { Empty, Wall, Portal, HealingPotion, ManaPotion, Gold, Ite
 public class Tile(TileType type) {
     public TileType Type { get; set; } = type;
 }
-
-public enum DeityEnum { Sacrifice, Enigma, Harvest, End, None }
 public enum MenuEnum {Level, None, Inventory}
 public static MenuEnum menu = new();
-public static List<DeityEnum> DeityList = Enum.GetValues(typeof(DeityEnum)).Cast<DeityEnum>().ToList();
 
 // Room global variables
 public static double GrowthAmount = 0;
@@ -1435,13 +1334,4 @@ public static bool IsOver = false;
 public static int Turn = 0, room_id = 1, current_id = -1, current_exitDirection;
 public static List<int> room_ids = [];
 public static List<RoomGenerator> rooms = [];
-
-public class Deity(int tspeed = 35, int tduration = 450, ConsoleColor color = ConsoleColor.White, string name = "???") {
-    public int tspeed = tspeed, tduration = tduration;
-    public ConsoleColor color = color;
-    public string name = name;
-    public void Talk(string str) {
-        Program.Print(str, tspeed, tduration, color, name);
-    }
-}
 }
